@@ -1,17 +1,18 @@
 # agent-memory-ssot
 
-Coding agents invent headcount, invent prices, and then write "I already sent that email."
-This library is a **file-backed Single Source of Truth** so they stop doing that.
+A file-backed memory layer for coding agents.
 
-Facts live in markdown you can read in git. Writes go through hard gates: no invented
-numbers, no money/action claims without a human, no silent overwrite of the same line.
+Facts live in markdown you can read in git. The files are the source of truth.
+A write that asserts a quantity, a commercial term, or an irreversible action
+has to carry a source tag or a human sign-off. There is no "summarize and save" helper.
 
 Neo4j is out of scope for v0.1. This is file-first.
 
 ## 이게 뭐냐
 
-에이전트가 사람 수, 금액, "메일 이미 보냄"을 지어내지 못하게 하는 파일 기반 기억층입니다.
-`profile.md`와 `log/YYYY-MM.md`가 원본이고, 숫자는 세거나 생략하고, 돈/발송은 사람 승인 없이는 못 적습니다.
+에이전트 기억을 마크다운 파일로 고정하는 라이브러리입니다.
+`profile.md`와 `log/YYYY-MM.md`가 원본이고, 출처가 없거나 사람이 확인하지 않은
+단정은 기록되지 않습니다.
 
 ## Install
 
@@ -23,7 +24,7 @@ pip install -e .
 
 Requires Python 3.11+.
 
-## 20-line example
+## Example
 
 ```python
 from pathlib import Path
@@ -36,7 +37,7 @@ store.write(Fact(
     tier=Tier.PROFILE,
     tags=[ClaimTag.VERIFIED],
     provenance="shop-walk-2026-08-01",
-    human_approved=True,  # required: the text contains a number
+    human_approved=True,
 ))
 
 print(store.read_profile())
@@ -45,7 +46,7 @@ print(store.search("hydrotest"))
 try:
     store.write(Fact(text="About 12 welders on the floor.", tags=[ClaimTag.SPECULATION]))
 except GateError as exc:
-    print(exc)  # numbers require VERIFIED or DOCS; do not invent counts
+    print(exc)
 ```
 
 ## File format
@@ -70,23 +71,23 @@ Unpromoted facts sit in `memory/candidates.jsonl` until a human approves `promot
 
 | Tag | Meaning |
 | --- | --- |
-| `[VERIFIED]` | A human or a live count stood behind this. Required (or DOCS) if the text has a digit. |
-| `[DOCS]` | Copied from a document you can point at via `provenance`. Also satisfies the number gate. |
-| `[SPECULATION]` | Soft memory. **Illegal** on the same line as a number. |
+| `[VERIFIED]` | A human or a live source stood behind this. Required (or DOCS) for a quantity claim. |
+| `[DOCS]` | Copied from a document you can point at via `provenance`. |
+| `[SPECULATION]` | Soft memory. Cannot sit on the same line as a quantity claim. |
 
-ISO dates (`2026-08-19`) and `YYYY-MM` in the text are stripped before the number gate runs, so a dated episode is not a count claim.
+ISO dates (`2026-08-19`) and `YYYY-MM` are ignored by the quantity check, so a dated episode is not treated as a measurement.
 
-## Gates (the product)
+## Write rules
 
 Enforced on every `write` / `promote` in `memory_ssot/gates.py`:
 
-1. **Number** — leftover digits after date-strip require `VERIFIED` or `DOCS`. Speculation + a number is rejected. Message: `numbers require VERIFIED or DOCS; do not invent counts`.
-2. **Money** — `money` / `price` / `cost` / `KRW` / `USD` / `invoice` / `quotation` / `견적` / `원` / `달러` require `human_approved=True`.
-3. **Action** — send-mail, delete, git commit, deploy, `발송` require `human_approved=True`.
+1. **Quantity** — leftover digits after date-strip need `VERIFIED` or `DOCS`. Speculation plus a quantity is rejected.
+2. **Commercial language** — terms like quotation, invoice, KRW, USD, 견적 need `human_approved=True`.
+3. **Irreversible action** — send, delete, git commit, deploy, 발송 need `human_approved=True`.
 4. **Dedup** — exact text (trim, case-sensitive) is a no-op and returns the existing fact.
 5. **Forget** — exact text only.
-6. **Promote** — candidate → profile/log only if `human_approved=True`. Otherwise it stays in the inbox.
-7. **No fabrication helper** — there is no "summarize and write" API.
+6. **Promote** — candidate to profile/log only if `human_approved=True`. Otherwise it stays in the inbox.
+7. **No fabrication helper** — there is no API that summarizes a chat and writes it down.
 
 ## API
 
@@ -126,7 +127,7 @@ memory-ssot check ./memory
 ## What this is not
 
 - Not a graph database. Not a vector store. Not an LLM wrapper.
-- It will not count people for you. Live-count or omit.
+- It will not measure the shop for you. Bring a source, or omit the claim.
 - Dummy examples only in this repo (a generic pressure-vessel shop). Bring your own facts.
 
 ## License

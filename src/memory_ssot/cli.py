@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="memory-ssot",
-        description="File-backed SSOT memory for coding agents. Never invent numbers.",
+        description="File-backed source-of-truth memory for coding agents.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 

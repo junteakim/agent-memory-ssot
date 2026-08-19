@@ -55,7 +55,7 @@ def test_cli_write_number_rejected(tmp_path: Path, capsys) -> None:
     rc = main(["write", "--root", str(root), "--text", "Headcount is 40 people."])
     assert rc == 2
     err = capsys.readouterr().err
-    assert "do not invent counts" in err
+    assert "quantity claims require VERIFIED or DOCS" in err
 
 
 def test_cli_promote_flow(tmp_path: Path, capsys) -> None:
@@ -102,7 +102,7 @@ def test_cli_check_ok_and_fail(tmp_path: Path, capsys) -> None:
         encoding="utf-8",
     )
     assert main(["check", str(root)]) == 1
-    assert "do not invent counts" in capsys.readouterr().out
+    assert "quantity claims require VERIFIED or DOCS" in capsys.readouterr().out
 
 
 def test_cli_read_log(tmp_path: Path, capsys) -> None:

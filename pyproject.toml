@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "memory-ssot"
 version = "0.1.0"
-description = "File-backed Single Source of Truth memory for coding agents. Never invent numbers."
+description = "File-backed source-of-truth memory for coding agents."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"

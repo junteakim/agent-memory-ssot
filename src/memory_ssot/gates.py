@@ -1,4 +1,4 @@
-"""Hard gates. Agents invent counts, prices, and "I already sent that". Stop them."""
+"""Write gates. Quantity claims, commercial language, and irreversible actions need a source or a human."""
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ ACTION_RE = re.compile(
     r"발송)"
 )
 
-NUMBER_GATE_MSG = "numbers require VERIFIED or DOCS; do not invent counts"
-MONEY_GATE_MSG = "money/price/cost claims require human_approved=True"
-ACTION_GATE_MSG = "send-mail / delete / git commit / deploy / 발송 require human_approved=True"
+NUMBER_GATE_MSG = "quantity claims require VERIFIED or DOCS"
+MONEY_GATE_MSG = "commercial language requires human_approved=True"
+ACTION_GATE_MSG = "irreversible actions require human_approved=True"
 PROMOTE_GATE_MSG = "promote requires human_approved=True"
 
 
