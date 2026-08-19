@@ -3,16 +3,15 @@
 A file-backed memory layer for coding agents.
 
 Facts live in markdown you can read in git. The files are the source of truth.
-A write that asserts a quantity, a commercial term, or an irreversible action
-has to carry a source tag or a human sign-off. There is no "summarize and save" helper.
+Agents write candidates on their own. If the label, the edge to a source, and the claim tag line up, the write goes in. A person only shows up when the canonical file is about to change. Confirmation is not the product. Making confirmation rare is.
 
 Neo4j is out of scope for v0.1. This is file-first.
 
 ## 이게 뭐냐
 
 에이전트 기억을 마크다운 파일로 고정하는 라이브러리입니다.
-`profile.md`와 `log/YYYY-MM.md`가 원본이고, 출처가 없거나 사람이 확인하지 않은
-단정은 기록되지 않습니다.
+후보는 에이전트가 그냥 쌓습니다. 문법과 출처가 맞으면 대부분 혼자 들어갑니다.
+사람이 보는 건 `profile.md` / `log` 본문을 바꿀 때뿐입니다. 확인이 자랑이 아닙니다.
 
 ## Install
 
@@ -32,21 +31,34 @@ from memory_ssot import MemoryStore, Fact, Tier, ClaimTag, GateError
 
 store = MemoryStore.init(Path("memory"))
 
+# Agents write to the inbox. Most go through on their own.
 store.write(Fact(
     text="The plant has 3 hydrotest bays.",
     tier=Tier.PROFILE,
     tags=[ClaimTag.VERIFIED],
     provenance="shop-walk-2026-08-01",
-    human_approved=True,
-))
+), candidate=True)
+
+store.write(Fact(
+    text="RFQ received for a dummy vessel.",
+    tier=Tier.LOG,
+    tags=[ClaimTag.DOCS],
+    provenance="example",
+), candidate=True)
+
+print(store.candidates())
+
+# A person only appears when promoting to the canonical record.
+cid = store.candidates()[0].id
+store.promote(cid, human_approved=True)
 
 print(store.read_profile())
 print(store.search("hydrotest"))
 
 try:
-    store.write(Fact(text="About 12 welders on the floor.", tags=[ClaimTag.SPECULATION]))
+    store.write(Fact(text="About 12 welders on the floor.", tags=[ClaimTag.SPECULATION]), candidate=True)
 except GateError as exc:
-    print(exc)
+    print(exc)  # quantity claim without VERIFIED or DOCS
 ```
 
 ## File format
@@ -65,7 +77,7 @@ except GateError as exc:
 - (2026-08-19) [DOCS] RFQ received for a dummy vessel. <!-- prov:example -->
 ```
 
-Unpromoted facts sit in `memory/candidates.jsonl` until a human approves `promote`.
+Unpromoted facts sit in `memory/candidates.jsonl` until `promote`.
 
 ## Claim tags
 
@@ -81,9 +93,9 @@ ISO dates (`2026-08-19`) and `YYYY-MM` are ignored by the quantity check, so a d
 
 Enforced on every `write` / `promote` in `memory_ssot/gates.py`:
 
-1. **Quantity** — leftover digits after date-strip need `VERIFIED` or `DOCS`. Speculation plus a quantity is rejected.
-2. **Commercial language** — terms like quotation, invoice, KRW, USD, 견적 need `human_approved=True`.
-3. **Irreversible action** — send, delete, git commit, deploy, 발송 need `human_approved=True`.
+1. **Quantity** — leftover digits after date-strip need `VERIFIED` or `DOCS` to enter the inbox. Speculation plus a quantity is rejected.
+2. **Commercial language** — terms like quotation, invoice, KRW, USD, 견적 can sit in the inbox with the right source tag. Human sign-off is only required when promoting to the canonical file.
+3. **Irreversible action** — send, delete, git commit, deploy, 발송 can sit in the inbox with the right source tag. Human sign-off is only required when promoting to the canonical file.
 4. **Dedup** — exact text (trim, case-sensitive) is a no-op and returns the existing fact.
 5. **Forget** — exact text only.
 6. **Promote** — candidate to profile/log only if `human_approved=True`. Otherwise it stays in the inbox.
@@ -113,14 +125,21 @@ store.check() -> list[str]                  # on-disk gate violations
 
 ```bash
 memory-ssot init ./memory
+
+# Agents write to the inbox on their own.
 memory-ssot write --root ./memory --text "The plant has 3 hydrotest bays." \
-    --tier profile --tag VERIFIED --prov shop-walk-2026-08-01 --approve
+    --tier profile --tag VERIFIED --prov shop-walk-2026-08-01 --candidate
+
+memory-ssot write --root ./memory --text "Cranes share one runway." \
+    --tag VERIFIED --candidate
+
+# A person only shows up for promote.
+memory-ssot promote --root ./memory --id <id> --approve
+
 memory-ssot read --root ./memory --profile
 memory-ssot read --root ./memory --log 2026-08
 memory-ssot search --root ./memory hydrotest
 memory-ssot forget --root ./memory --text "The plant has 3 hydrotest bays."
-memory-ssot write --root ./memory --text "Cranes share one runway." --tag VERIFIED --candidate
-memory-ssot promote --root ./memory --id <id> --approve
 memory-ssot check ./memory
 ```
 
