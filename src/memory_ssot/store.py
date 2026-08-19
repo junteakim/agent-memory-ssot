@@ -195,12 +195,12 @@ class MemoryStore:
                         ClaimTag.VERIFIED not in tags and ClaimTag.DOCS not in tags
                     ):
                         violations.append(
-                            f"{loc}: numbers require VERIFIED or DOCS; do not invent counts"
+                            f"{loc}: quantity claims require VERIFIED or DOCS"
                         )
                 # Files are the approved SSOT; still flag money/action so a human sees them.
                 if has_money_claim(fact.text):
                     violations.append(
-                        f"{loc}: money/price/cost language present (confirm a human signed off)"
+                        f"{loc}: commercial language present (confirm a human signed off)"
                     )
                 if has_action_claim(fact.text):
                     violations.append(

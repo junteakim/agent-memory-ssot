@@ -67,13 +67,13 @@ def test_write_log_month_file(tmp_path: Path) -> None:
 
 def test_number_without_tag_rejected(tmp_path: Path) -> None:
     store = _store(tmp_path)
-    with pytest.raises(GateError, match="do not invent counts"):
+    with pytest.raises(GateError, match="quantity claims require VERIFIED or DOCS"):
         store.write(Fact(text="The plant has 3 hydrotest bays."))
 
 
 def test_speculation_plus_number_rejected(tmp_path: Path) -> None:
     store = _store(tmp_path)
-    with pytest.raises(GateError, match="do not invent counts"):
+    with pytest.raises(GateError, match="quantity claims require VERIFIED or DOCS"):
         store.write(
             Fact(
                 text="About 12 welders on the floor.",
@@ -202,7 +202,7 @@ def test_search(tmp_path: Path) -> None:
 
 def test_propose_number_still_gated(tmp_path: Path) -> None:
     store = _store(tmp_path)
-    with pytest.raises(GateError, match="do not invent counts"):
+    with pytest.raises(GateError, match="quantity claims require VERIFIED or DOCS"):
         store.propose(Fact(text="There are 9 unused jigs."))
 
 
@@ -214,4 +214,4 @@ def test_check_flags_invented_counts(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     violations = store.check()
-    assert any("do not invent counts" in v for v in violations)
+    assert any("quantity claims require VERIFIED or DOCS" in v for v in violations)
